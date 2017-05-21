@@ -1,0 +1,408 @@
+<html>
+<head>
+	<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>자유를 찾아서</title>
+	<style>
+		body{background-color:#000000;font-size:11pt;font-family:dotum;font-weight:bold;
+		background-image: url("background.png");
+		background-repeat: no-repeat;
+		background-size: 100% 100%;}
+
+		.stones{position:absolute;font-size:1pt;}
+		.progressbar{border-radius:10px; position:relative; width:1100px; height:20px; background-color: pink; overflow:hidden;}
+		.progress{border-radius:10px; position:absolute; width:1100px; height:20px; background-color: white;}
+
+		#msg{position:absolute;text-align:center;font-size:20pt;font-family:dotum;color:#ffffff;font-weight:bold;}
+		#msgStep1{padding-top:150px }
+		#msgStep2{padding-top:205px}
+		#msgStep3{padding-top:205px}
+		#msgStep4{padding-top:205px}
+		#msgStep5{padding-top:205px}
+
+		#stonestotal{position:absolute;font-weight:bold;font-size:0pt;color:#FFFFFF}
+		#gametable{position:absolute;background-color:#000000;
+		background-image: url("back_2.png");
+		background-repeat: no-repeat;
+		background-size: 100% 100%;
+	 }
+		#character{position:absolute;}
+
+	</style>
+
+	<script src="/scripts/jquery-1.4.js"></script>
+
+	<script>
+
+	//기준위치
+	var start_x=100;
+	var start_y=100;
+
+	//게임크기
+	var gametable_w = 1100; //300
+	var gametable_h=607; //407
+
+	//캐릭터크기
+	var character_w=16;
+	var character_h=28;
+
+	//돌의 크기
+	var stones_w=20;
+	var stones_h=17;
+
+	//음식
+	//명찰
+	//스타킹
+	//화장
+	var stoneimg = "hambuger.png";
+
+	//캐릭터이동
+	var charMoveTime=15;
+	var charMoveWidth=0;//이동량
+	var charMoveAddspeed=0.3;//이동량 증가량
+
+	//돌 만드는 시간
+	var stonesMakeTime=400;
+
+	//돌 내려오는 속도
+	var stonesDropTime=100;
+
+	//게이지 바
+	//p 게이지 전체
+	//pct 증가되는 게이지
+	var p = 0;
+	var pct = 0;
+
+	//키플래그
+	var movingLeft=false;
+	var movingRight=false;
+	var gameOver=false;
+	//페이지 수 1 = 첫번째 화면
+	var pageStep=1;
+
+	//임시값
+	tmp_charMoveWidth=charMoveWidth;
+
+	function main(){
+		pageview(1);
+		setGame();
+	}
+
+	function setGame(){
+		setGametable();
+		setCharacter();
+		showCharacterImg(front);
+	}
+
+	function setGametable(){
+		gametable.style.width=gametable_w;
+		gametable.style.height=gametable_h;
+
+		gametable.style.left=start_x;
+		gametable.style.top=start_y;
+
+		stonestotal.style.width=45;
+		stonestotal.style.height=22;
+		stonestotal.style.left=start_x+5;
+		stonestotal.style.top=start_y+5;
+
+		msg.style.left=start_x;
+		msg.style.top=start_y;
+		msg.style.width=gametable_w;
+	}
+
+	function setCharacter(){
+		character.style.width=character_w;
+		character.style.height=character_h;
+
+		character.style.left=start_x+((gametable_w-character_w)/2);
+		character.style.top=start_y+gametable_h-character_h;
+	}
+
+	function loading(){
+	var prg = document.getElementById("progress");
+	 if(prg){
+	  p++;
+	  if(p >= 1100){p = 0;} //ㅔp가 전체 바
+	   prg.style.backgroundPosition = p;
+	   pct+=10;
+	  if(pct >= 0){pct = -1100;} //pct가 증가하는 바
+	   prg.style.left = pct;
+	  }
+	}
+// num은 키보드 입력받은 값을 나타냄
+	function keydown(num){
+		if(pageStep==1){ //첫화면일때
+			if(num==32){
+				//스페이스를 눌렀을 때 게임 스타트 하고 페이지 수는 2로 넘어감
+				gamestart();
+				pageview(2);
+				setTimeout("msgStep2.style.display='none'",1000);
+			}
+		}
+		else if(pageStep==3){ //죽었을때
+			if(num==32){
+				pageview(1);
+			}
+		}
+		else if(gameOver){ //게임오버시
+			if(num==32){
+				gamestart();
+			}
+		}
+		else{ //게임중
+			//32 스페이스 37 왼쪽 방향키 39 오른쪽 방향키
+			if(num==37 && movingLeft==false){
+				movingLeft=true;
+				movingRight=false;
+				tmp_charMoveWidth=charMoveWidth;
+				moveLeft(tmp_charMoveWidth);
+				showCharacterImg(left);
+			}
+			else if(num==39 && movingRight==false){
+				movingRight=true;
+				movingLeft=false;
+				tmp_charMoveWidth=charMoveWidth;
+				moveRight(tmp_charMoveWidth);
+				showCharacterImg(right);
+			}
+		}
+	}
+
+	function moveLeft(){
+		if(movingLeft){
+			var charleft=character.style.left.substr(0,character.style.left.length-2)-0;
+
+			if(charleft-start_x<tmp_charMoveWidth){
+				movingLeft=false;
+				character.style.left=start_x;
+			}
+			else{
+				tmp_charMoveWidth=tmp_charMoveWidth+charMoveAddspeed;
+				character.style.left=charleft-tmp_charMoveWidth;
+				setTimeout(moveLeft,charMoveTime);
+			}
+		}
+	}
+
+	function moveRight(){
+		if(movingRight){
+			var charleft=character.style.left.substr(0,character.style.left.length-2)-0;
+
+			if((start_x+gametable_w)-(charleft+character_w)<tmp_charMoveWidth){
+				movingRight=false;
+				character.style.left=start_x+gametable_w-character_w;
+			}
+			else{
+				tmp_charMoveWidth=tmp_charMoveWidth+charMoveAddspeed;
+				character.style.left=charleft+tmp_charMoveWidth;
+				setTimeout(moveRight,charMoveTime);
+			}
+		}
+	}
+
+	function keyup(num){
+		if(num==37)			movingLeft=false;
+		else if(num==39)	movingRight=false;
+
+		if(movingLeft) showCharacterImg(left);
+		else if(movingRight) showCharacterImg(right);
+		else if(gameOver) showCharacterImg(die);
+		else showCharacterImg(front);
+	}
+
+
+	function gamestart(){
+		gameOver=false;
+		setGame();
+		gametable.innerHTML="";
+		stonestotal_cur.innerHTML="0";
+		makestones(0);
+	}
+
+	function pageview(step){
+		pageStep=step;
+		// msgStep3 -> Failed Revolution!
+		// msgStep2 -> Ready?
+		// msgStep1 -> 시작화면 메세지
+		msgStep1.style.display='none';
+		msgStep2.style.display='none';
+		msgStep3.style.display='none';
+		msgStep4.style.display='none';
+		msgStep5.style.display='none';
+
+		//첫 화면일때
+		if(step==1){
+			msgStep1.style.display='';
+			stonestotal.style.display='none';
+			character.style.display='none';
+			gametable.innerHTML="";
+
+
+		}
+		//두번째 화면 일때
+		if(step==2){
+			msgStep2.style.display='';
+			stonestotal.style.display='';
+			character.style.display='';
+
+			if(gameOver == true)
+			{
+				stoneimg = "hambuger.png"
+			}
+
+		}
+		// 세번째 화면 일때
+		if(step==3){
+			msgStep3.style.display='';
+		}
+	}
+
+	function makestones(stonesno){
+		if(!gameOver){
+			var stonesObj = document.createElement('div');
+			stonesObj.id = 'stones_' + stonesno;
+			stonesObj.style.width = stones_w;
+			stonesObj.style.height = stones_h;
+			stonesObj.style.left = Math.floor(Math.random() * (gametable_w-stones_w));
+			stonesObj.className = 'stones';
+			//gametable.background-image = "back.png";
+
+			// 음식이 명찰로
+			if(stonestotal_cur.innerHTML == 50)
+			{
+				stoneimg = "nametag.png"
+				stonesMakeTime = 300;
+				front.src = "person2.png";
+				left.src = "person2.png";
+				right.src = "person2.png";
+			}
+
+
+			// 명찰로 스타킹으로
+			if(stonestotal_cur.innerHTML == 100)
+			{
+				stoneimg = "stocking.png"
+				stonesMakeTime = 200;
+				front.src = "person3.png";
+				left.src = "person3.png";
+				right.src = "person3.png";
+			}
+
+			// 스타킹을 화장으로
+			if(stonestotal_cur.innerHTML == 150)
+			{
+				stoneimg = "lipstick.png"
+				stonesMakeTime = 150;
+				front.src = "person4.png";
+				left.src = "person4.png";
+				right.src = "person4.png";
+			}
+
+			if(stonestotal_cur.innerHTML == 170)
+			{
+				stonesMakeTime = 0;
+				front.src = "person_change.png";
+				left.src = "person_change.png";
+				right.src = "person_change.png";
+				return false;
+			}
+			stonesObj.innerHTML = "<img src='"+stoneimg+"'>";
+
+			//70개 피하면 성화봉송 바뀌어요
+			gametable.appendChild(stonesObj);
+
+			drop_down("stones_"+stonesno,0);
+			setTimeout("makestones('"+(stonesno-0+1)+"')",stonesMakeTime);
+		}
+	}
+	var c=0;
+	function drop_down(stonesid,speed){
+		if(!gameOver){
+			var stonesobj=document.getElementById(stonesid);
+			var stonestop=parseFloat(stonesobj.style.top) || 0;
+			var stonesleft=parseFloat(stonesobj.style.left) || 0;
+			var charactertop=parseFloat(character.style.top) || 0;
+			var characterleft=parseFloat(character.style.left) || 0;
+
+			/* 충돌체크 시작 */
+			if(stonestop+start_y>charactertop-stones_h && stonestop+start_y<charactertop+character_h){
+				if(stonesleft+start_x>characterleft-stones_w && stonesleft+start_x<characterleft+character_w){
+					showCharacterImg(die);
+					movingRight=false;
+					movingLeft=false;
+					gameOver=true;
+					pageview(3);
+					return false;
+				}
+			}
+			/* 충돌체크 종료 */
+			stonesobj.style.top=stonestop+speed;
+
+			if(stonestop<gametable_h-start_y+80){
+				if(!speed) speed = 2;
+				if(speed<17)speed=speed*1.02;
+				requestAnimationFrame(function(){
+					drop_down(stonesid,speed)
+				});
+			}
+			else{
+				gametable.removeChild(stonesobj);
+				stonestotal_cur.innerHTML = parseInt(stonestotal_cur.innerHTML, 10) + 1;
+				if(stonestotal_cur.innerHTML-0>stonestotal_max.innerHTML-0) stonestotal_max.innerHTML=stonestotal_cur.innerHTML;
+			}
+		}
+	}
+	function showCharacterImg(id){
+		front.style.display='none';
+		left.style.display='none';
+		right.style.display='none';
+		die.style.display='none';
+		id.style.display='';
+	}
+	</script>
+</head>
+<body onload="main()" onkeydown="keydown(event.keyCode);" onkeyup="keyup(event.keyCode)">
+	<!-- 게임테이블 -->
+	<div id="gametable"></div>
+
+	<!-- 캐릭터레이어 -->
+	<div id="character">
+		<img src="person.png" id="front">
+		<img src="person.png" id="left">
+		<img src="person.png" id="right">
+		<img src="person_dead.png" id="die">
+	</div>
+
+	<!-- 점수레이어 -->
+	<div id="stonestotal">
+		<div id="stonestotal_max">0</div>
+		<div id="stonestotal_cur">0</div>
+	</div>
+
+	<!-- 횃불 바 -->
+	<div class="progressbar shadow">
+	<div class="progress embossed" id="progress"></div>
+	</div>
+
+	<!-- 메시지 레이어 시작-->
+	<div id="msg">
+		<!-- Step1 : 인사말 -->
+
+		<div id="msgStep1" >
+			<h2>자유를 찾아서 </h2><BLINK>(시작하려면 스페이스바를 누르세요)</BLINK>
+		</div>
+
+		<!-- Step2 : Ready -->
+		<div id="msgStep2">R E A D Y ?</div>
+
+		<!-- Step3 : Failed Revolution -->
+		<div id="msgStep3">Failed Revolution</div>
+		<div id="msgStep4">P A S S !</div>
+		<div id="msgStep5">R E V O L U T I O N !</div>
+
+	</div>
+	<!-- 메시지 레이어 끝-->
+
+
+</body>
+</html>
