@@ -9,3 +9,7 @@
   > 압축풀고
   > game 폴더 > find_free.html 
 ```
+또는
+```
+https://ssep4u.github.io/find_free/game/find_free.html
+```
